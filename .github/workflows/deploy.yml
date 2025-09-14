@@ -53,11 +53,10 @@ jobs:
             fi
 
             # Install Docker Compose if missing
-            if ! command -v docker-compose &> /dev/null; then
-            echo "Installing Docker Compose..."
-            sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-$(uname -m)" -o /usr/local/bin/docker-compose
+            if ! command -v docker compose &> /dev/null; then
+            echo "Installing Docker Compose v2..."
+            sudo curl -SL https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
-            docker-compose version
             fi
 
             # Stop old containers, rebuild, and restart
