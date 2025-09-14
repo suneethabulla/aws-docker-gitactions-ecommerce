@@ -48,21 +48,23 @@ jobs:
             sudo dnf install git -y
             fi
 
-            # Remove Amazon Linux defaults
-            sudo dnf remove -y docker docker-compose docker-compose-plugin
+            cd ~/ecommercefullstack
 
-            # Add Docker official repo
-            sudo dnf install -y yum-utils
-            sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            # Install Git if missing
+            if ! command -v git &> /dev/null; then
+            echo "Installing Git..."
+            sudo dnf install git -y
+            fi
 
-            # Install latest Docker + Compose plugin
-            sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-            # Enable and start
+            # Install Docker + Docker Compose if missing
+            if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null; then
+            echo "Installing Docker & Docker Compose from Amazon Linux 2023 repos..."
+            sudo dnf install -y docker docker-compose
             sudo systemctl enable docker
             sudo systemctl start docker
             sudo usermod -aG docker ec2-user
+            fi
 
-            docker compose version
-            docker compose up -d --build
-
+            # Stop old containers, rebuild, and restart
+            docker-compose down
+            docker-compose up -d --build
