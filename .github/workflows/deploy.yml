@@ -48,23 +48,21 @@ jobs:
             sudo dnf install git -y
             fi
 
-            # Install Docker if missing
-            if ! command -v docker &> /dev/null; then
-            echo "Installing Docker..."
-            sudo dnf install -y docker
+            # Remove Amazon Linux defaults
+            sudo dnf remove -y docker docker-compose docker-compose-plugin
+
+            # Add Docker official repo
+            sudo dnf install -y yum-utils
+            sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+            # Install latest Docker + Compose plugin
+            sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+            # Enable and start
             sudo systemctl enable docker
             sudo systemctl start docker
             sudo usermod -aG docker ec2-user
-            fi
 
-            # Install Docker Compose if missing
-            if ! command -v docker-compose &> /dev/null; then
-            echo "Installing Docker Compose..."
-            sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            fi
-
-            # Stop old containers, rebuild, and restart
-            docker-compose down
-            docker-compose up -d --build
+            docker compose version
+            docker compose up -d --build
 
