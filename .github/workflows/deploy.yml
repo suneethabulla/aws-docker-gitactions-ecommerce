@@ -66,6 +66,6 @@ jobs:
             fi
 
             # Stop old containers, rebuild, and restart
-            docker-compose down
-            docker-compose up -d --build
+            docker compose down
+            docker compose up -d --build
 
