@@ -1,49 +1,65 @@
-name: Deploy Fullstack App on EC2 Linux
+name: Deploy Ecommerce Fullstack App on EC2
 
 on:
   push:
     branches:
-      - main   # Runs when you push to main branch
-  workflow_dispatch:   # 👈 Optional: allows manual run from Actions tab
+      - main
+  workflow_dispatch:   # allow manual run from GitHub UI
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout repo
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      - name: List repo files (debug)
-        run: |
-          pwd
-          ls -la
-          ls -R
+      # Step 2: Debug - list files in repo
+      - name: List repo files
+        run: ls -R
 
-      # Step 3: Copy docker files to EC2
+      # Step 3: Copy files to EC2 inside ~/ecommercefullstack
       - name: Copy files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user   # 🔹 use ec2-user if Amazon Linux 2
+          username: ec2-user    # ✅ use ec2-user for Amazon Linux
           key: ${{ secrets.EC2_SSH_KEY }}
           source: |
             docker-compose.yml
             Dockerfile.backend
             Dockerfile.frontend
-          target: /home/ubuntu/ecommerce-app
+            nginx.conf
+          target: /home/ec2-user/ecommercefullstack
 
-      # Step 4: SSH into EC2 and deploy
+      # Step 4: SSH into EC2 and deploy with Docker Compose
       - name: Deploy on EC2 with Docker Compose
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user   # 🔹 or ec2-user if Amazon Linux 2
+          username: ec2-user    # ✅ Amazon Linux user
           key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
           debug: true
           script: |
-            cd ~/ecommerce-app
+            cd ~/ecommercefullstack
 
-            # Install Docker if not installed
+            # Install Docker if missing
             if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              curl -fsSL https://get.docker.com | sh
+              sudo usermod -aG docker ec2-user || true
+            fi
+
+            # Install Docker Compose if missing
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Installing Docker Compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Stop old containers, rebuild, and restart
+            docker-compose down
+            docker-compose build --no-cache
+            docker-compose up -d
