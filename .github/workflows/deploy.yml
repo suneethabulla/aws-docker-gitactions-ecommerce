@@ -4,17 +4,18 @@ on:
   push:
     branches:
       - main   # Runs when you push to main branch
+  workflow_dispatch:   # 👈 Optional: allows manual run from Actions tab
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
+      # Step 1: Checkout repo
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      # Step 2: Debug - List repo files
+      # Step 2: Debug - list repo files
       - name: List repo files
         run: ls -R
 
@@ -23,7 +24,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user   # 🔹 use ec2-user if your EC2 is Amazon Linux
+          username: ec2-user   # 🔹 use ec2-user if Amazon Linux 2
           key: ${{ secrets.EC2_SSH_KEY }}
           source: |
             docker-compose.yml
@@ -36,28 +37,12 @@ jobs:
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user   # 🔹 use ec2-user if Amazon Linux
+          username: ec2-user   # 🔹 or ec2-user if Amazon Linux 2
           key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
           debug: true
           script: |
             cd ~/ecommerce-app
 
-            # Install Docker if missing
+            # Install Docker if not installed
             if ! command -v docker &> /dev/null; then
-              echo "Installing Docker..."
-              curl -fsSL https://get.docker.com | sh
-              sudo usermod -aG docker ubuntu || true
-            fi
-
-            # Install Docker Compose if missing
-            if ! command -v docker-compose &> /dev/null; then
-              echo "Installing Docker Compose..."
-              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-            fi
-
-            # Rebuild and restart containers
-            docker-compose down
-            docker-compose build --no-cache
-            docker-compose up -d
