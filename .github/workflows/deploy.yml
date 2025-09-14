@@ -19,46 +19,43 @@ jobs:
       - name: List repo files
         run: ls -R
 
-      # Step 3: Copy all required files to EC2 inside ~/ecommercefullstack
-      - name: Copy files to EC2
+      # Step 3: Copy files to EC2 inside ~/ecommercefullstack
+      - name: Copy repo to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user    # ✅ Amazon Linux default user
+          username: ec2-user   # or ubuntu if Ubuntu server
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            docker-compose.yml
-            Dockerfile.backend
-            Dockerfile.frontend
-            nginx.conf
+          source: "./*"
           target: /home/ec2-user/ecommercefullstack
+ 
 
       # Step 4: SSH into EC2 and deploy with Docker Compose
       - name: Deploy on EC2 with Docker Compose
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user    # ✅ Amazon Linux default user
+          username: ec2-user    # ✅ Amazon Linux user
           key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
           debug: true
           script: |
             cd ~/ecommercefullstack
 
-            # Install Docker if missing (Amazon Linux 2 way)
+            # Install Docker if missing
             if ! command -v docker &> /dev/null; then
-              echo "Installing Docker on Amazon Linux 2..."
-              sudo amazon-linux-extras install docker -y
-              sudo systemctl enable docker
-              sudo systemctl start docker
-              sudo usermod -aG docker ec2-user
+            echo "Installing Docker on Amazon Linux 2..."
+            sudo amazon-linux-extras install docker -y
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            sudo usermod -aG docker ec2-user
             fi
 
             # Install Docker Compose if missing
             if ! command -v docker-compose &> /dev/null; then
-              echo "Installing Docker Compose..."
-              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
+            echo "Installing Docker Compose..."
+            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
             fi
 
             # Stop old containers, rebuild, and restart
