@@ -11,13 +11,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repo
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      # Step 2: Debug - list repo files
-      - name: List repo files
-        run: ls -R
+      - name: List repo files (debug)
+        run: |
+          pwd
+          ls -la
+          ls -R
 
       # Step 3: Copy docker files to EC2
       - name: Copy files to EC2
