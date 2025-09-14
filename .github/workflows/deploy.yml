@@ -40,31 +40,22 @@ jobs:
           script_stop: true
           debug: true
           script: |
-            cd ~/ecommercefullstack
-
+            
             # Install Git if missing
-            if ! command -v git &> /dev/null; then
-            echo "Installing Git..."
+            sudo dnf update -y
             sudo dnf install git -y
-            fi
-
-            cd ~/ecommercefullstack
-
-            # Install Git if missing
-            if ! command -v git &> /dev/null; then
-            echo "Installing Git..."
-            sudo dnf install git -y
-            fi
-
-            # Install Docker + Docker Compose if missing
-            if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null; then
-            echo "Installing Docker & Docker Compose from Amazon Linux 2023 repos..."
-            sudo dnf install -y docker docker-compose
+            sudo dnf install -y docker
             sudo systemctl enable docker
             sudo systemctl start docker
             sudo usermod -aG docker ec2-user
-            fi
-
-            # Stop old containers, rebuild, and restart
+            newgrp docker
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            docker-compose version
+            cd ~/ecommercefullstack
             docker-compose down
             docker-compose up -d --build
+
+
+
+
