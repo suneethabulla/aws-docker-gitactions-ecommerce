@@ -1,0 +1,63 @@
+name: Deploy Fullstack App on EC2 Linux
+
+on:
+  push:
+    branches:
+      - main   # Runs when you push to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      # Step 2: Debug - List repo files
+      - name: List repo files
+        run: ls -R
+
+      # Step 3: Copy docker files to EC2
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user   # 🔹 use ec2-user if your EC2 is Amazon Linux
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: |
+            docker-compose.yml
+            Dockerfile.backend
+            Dockerfile.frontend
+          target: /home/ubuntu/ecommerce-app
+
+      # Step 4: SSH into EC2 and deploy
+      - name: Deploy on EC2 with Docker Compose
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user   # 🔹 use ec2-user if Amazon Linux
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          debug: true
+          script: |
+            cd ~/ecommerce-app
+
+            # Install Docker if missing
+            if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              curl -fsSL https://get.docker.com | sh
+              sudo usermod -aG docker ubuntu || true
+            fi
+
+            # Install Docker Compose if missing
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Installing Docker Compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Rebuild and restart containers
+            docker-compose down
+            docker-compose build --no-cache
+            docker-compose up -d
